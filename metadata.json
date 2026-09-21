@@ -1,5 +1,5 @@
 {
-  "name": "My Business",
+  "name": "Business_Management_app",
   "description": "Offline-first My Business management & POS tool with local storage for business details, menu items, sales data, and appointments.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
