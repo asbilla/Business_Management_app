@@ -13,13 +13,16 @@ class WifiSyncWorker(
     workerParams: WorkerParameters
 ) : CoroutineWorker(appContext, workerParams) {
 
-    private val TAG = "WifiSyncWorker"
-
     override suspend fun doWork(): Result {
         return try {
             val database = AppDatabase.getDatabase(applicationContext)
             val preferences = AppPreferences.getInstance(applicationContext)
             val syncEngine = WifiSyncEngine(applicationContext, database, preferences)
+
+            if (!syncEngine.isLocalNetworkConnected()) {
+                Log.d(TAG, "WifiSyncWorker: Not connected to local Wi-Fi or Ethernet, skipping.")
+                return Result.success()
+            }
 
             val pairedDevices = database.pairedDeviceDao().getAllPairedDevicesSync()
             if (pairedDevices.none { it.status == "PAIRED" }) {
@@ -46,39 +49,48 @@ class WifiSyncWorker(
     }
 
     companion object {
+        private const val TAG = "WifiSyncWorker"
         const val PERIODIC_WORK_NAME = "wifi_sync_periodic_work"
         const val ONE_TIME_WORK_NAME = "wifi_sync_one_time_work"
 
         fun schedulePeriodicSync(context: Context) {
-            val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build()
+            try {
+                val constraints = Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
 
-            val periodicRequest = PeriodicWorkRequestBuilder<WifiSyncWorker>(15, TimeUnit.MINUTES)
-                .setConstraints(constraints)
-                .build()
+                val periodicRequest = PeriodicWorkRequestBuilder<WifiSyncWorker>(15, TimeUnit.MINUTES)
+                    .setConstraints(constraints)
+                    .build()
 
-            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                PERIODIC_WORK_NAME,
-                ExistingPeriodicWorkPolicy.KEEP,
-                periodicRequest
-            )
+                WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                    PERIODIC_WORK_NAME,
+                    ExistingPeriodicWorkPolicy.KEEP,
+                    periodicRequest
+                )
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to schedule periodic sync (e.g. unit test or uninitialized WorkManager): ${e.message}")
+            }
         }
 
         fun enqueueOpportunisticSync(context: Context) {
-            val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build()
+            try {
+                val constraints = Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
 
-            val request = OneTimeWorkRequestBuilder<WifiSyncWorker>()
-                .setConstraints(constraints)
-                .build()
+                val request = OneTimeWorkRequestBuilder<WifiSyncWorker>()
+                    .setConstraints(constraints)
+                    .build()
 
-            WorkManager.getInstance(context).enqueueUniqueWork(
-                ONE_TIME_WORK_NAME,
-                ExistingWorkPolicy.REPLACE,
-                request
-            )
+                WorkManager.getInstance(context).enqueueUniqueWork(
+                    ONE_TIME_WORK_NAME,
+                    ExistingWorkPolicy.REPLACE,
+                    request
+                )
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to enqueue opportunistic sync: ${e.message}")
+            }
         }
     }
 }

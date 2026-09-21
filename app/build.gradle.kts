@@ -28,7 +28,7 @@ android {
     val formattedDate = SimpleDateFormat("yyyyMMdd.HHmm", Locale.US).format(now)
     
     versionCode = (timestamp / 10000).toInt() // Unique version code
-    versionName = "v6.1" 
+    versionName = "v6.2" 
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     

@@ -16,7 +16,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         PairedDeviceEntity::class,
         SyncConflictEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -58,7 +58,6 @@ abstract class AppDatabase : RoomDatabase() {
 
         val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                // Ensure appointments table schema matches v3
                 db.execSQL(
                     """
                     CREATE TABLE IF NOT EXISTS appointments (
@@ -88,7 +87,6 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE transactions ADD COLUMN deletedAt INTEGER DEFAULT NULL")
                 db.execSQL("ALTER TABLE transactions ADD COLUMN version INTEGER NOT NULL DEFAULT 1")
                 db.execSQL("ALTER TABLE transactions ADD COLUMN deviceId TEXT NOT NULL DEFAULT ''")
-                // Populate updatedAt from existing timestamp
                 db.execSQL("UPDATE transactions SET updatedAt = timestamp WHERE updatedAt = 0")
 
                 // 2. Alter appointments table with sync metadata
@@ -96,7 +94,6 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE appointments ADD COLUMN deletedAt INTEGER DEFAULT NULL")
                 db.execSQL("ALTER TABLE appointments ADD COLUMN version INTEGER NOT NULL DEFAULT 1")
                 db.execSQL("ALTER TABLE appointments ADD COLUMN deviceId TEXT NOT NULL DEFAULT ''")
-                // Populate updatedAt from existing createdAt
                 db.execSQL("UPDATE appointments SET updatedAt = createdAt WHERE updatedAt = 0")
 
                 // 3. Create products table
@@ -174,6 +171,42 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // 1. Transactions indexes
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_transactions_uuid ON transactions (uuid)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_deletedAt ON transactions (deletedAt)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_timestamp ON transactions (timestamp)")
+
+                // 2. Appointments indexes
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_appointments_uuid ON appointments (uuid)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_appointments_deletedAt ON appointments (deletedAt)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_appointments_appointmentDate ON appointments (appointmentDate)")
+
+                // 3. Products indexes
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_products_uuid ON products (uuid)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_products_deletedAt ON products (deletedAt)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_products_active ON products (active)")
+
+                // 4. Sync Queue alterations and indexes
+                db.execSQL("ALTER TABLE sync_queue ADD COLUMN version INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE sync_queue ADD COLUMN lastAttemptAt INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_sync_queue_recordUuid ON sync_queue (recordUuid)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_sync_queue_status ON sync_queue (status)")
+
+                // 5. Paired Devices alterations and indexes
+                db.execSQL("ALTER TABLE paired_devices ADD COLUMN certificateFingerprint TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE paired_devices ADD COLUMN lastSyncCursor TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE paired_devices ADD COLUMN protocolVersion INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE paired_devices ADD COLUMN lastSeen INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_paired_devices_deviceId ON paired_devices (deviceId)")
+
+                // 6. Sync Conflicts alterations and indexes
+                db.execSQL("ALTER TABLE sync_conflicts ADD COLUMN conflictStatus TEXT NOT NULL DEFAULT 'PENDING'")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_sync_conflicts_recordUuid ON sync_conflicts (recordUuid)")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -181,7 +214,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "daily_reporting_db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build()
                 INSTANCE = instance
                 instance

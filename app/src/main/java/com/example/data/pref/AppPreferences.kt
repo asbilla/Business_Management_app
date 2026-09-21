@@ -224,6 +224,10 @@ class AppPreferences(context: Context) {
         )
     }
 
+    fun clearAll() {
+        prefs.edit().clear().apply()
+    }
+
     companion object {
         private const val PREF_NAME = "business_reporting_prefs"
         private const val KEY_WEB_APP_URL = "google_apps_script_url"

@@ -1,0 +1,172 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MyBusinessWifiSyncSchema",
+  "description": "JSON Schema for My Business Android <-> Windows Local Wi-Fi Synchronization Protocol v1",
+  "definitions": {
+    "SyncRecord": {
+      "type": "object",
+      "required": ["uuid", "entityType", "operation", "version", "updatedAt", "dataJson"],
+      "properties": {
+        "uuid": { "type": "string", "format": "uuid" },
+        "entityType": { "type": "string", "enum": ["TRANSACTION", "APPOINTMENT", "PRODUCT", "BUSINESS_PROFILE"] },
+        "operation": { "type": "string", "enum": ["CREATE", "UPDATE", "DELETE"] },
+        "version": { "type": "integer", "minimum": 1 },
+        "updatedAt": { "type": "integer" },
+        "deletedAt": { "type": ["integer", "null"] },
+        "deviceId": { "type": "string" },
+        "dataJson": { "type": "string" }
+      }
+    },
+    "SyncRecordResult": {
+      "type": "object",
+      "required": ["recordUuid", "status"],
+      "properties": {
+        "recordUuid": { "type": "string", "format": "uuid" },
+        "status": { "type": "string", "enum": ["APPLIED", "CONFLICT", "RETRY", "REJECTED"] },
+        "error": { "type": ["string", "null"] },
+        "resolvedVersion": { "type": ["integer", "null"] }
+      }
+    },
+    "SyncPairRequest": {
+      "type": "object",
+      "required": ["deviceId", "deviceName", "pairingPin"],
+      "properties": {
+        "deviceId": { "type": "string" },
+        "deviceName": { "type": "string" },
+        "pairingPin": { "type": "string", "pattern": "^[0-9]{6}$" },
+        "clientIp": { "type": ["string", "null"] },
+        "clientPort": { "type": "integer", "default": 54320 },
+        "clientTimestamp": { "type": "integer" },
+        "nonce": { "type": "string" }
+      }
+    },
+    "SyncPairResponse": {
+      "type": "object",
+      "required": ["success", "deviceId", "deviceName"],
+      "properties": {
+        "success": { "type": "boolean" },
+        "deviceId": { "type": "string" },
+        "deviceName": { "type": "string" },
+        "authToken": { "type": ["string", "null"] },
+        "serverCertificateFingerprint": { "type": "string" },
+        "message": { "type": "string" }
+      }
+    },
+    "SyncHealthRequest": {
+      "type": "object",
+      "required": ["protocolVersion", "deviceId"],
+      "properties": {
+        "protocolVersion": { "type": "integer", "default": 1 },
+        "deviceId": { "type": "string" },
+        "clientTimestamp": { "type": "integer" },
+        "nonce": { "type": "string" }
+      }
+    },
+    "SyncHealthResponse": {
+      "type": "object",
+      "required": ["protocolVersion", "deviceId", "deviceName", "status"],
+      "properties": {
+        "protocolVersion": { "type": "integer", "default": 1 },
+        "deviceId": { "type": "string" },
+        "deviceName": { "type": "string" },
+        "serverTime": { "type": "integer" },
+        "status": { "type": "string", "enum": ["READY", "MAINTENANCE", "BUSY"] }
+      }
+    },
+    "SyncGetChangesRequest": {
+      "type": "object",
+      "required": ["deviceId", "authToken"],
+      "properties": {
+        "deviceId": { "type": "string" },
+        "authToken": { "type": "string" },
+        "cursor": { "type": "string" },
+        "limit": { "type": "integer", "minimum": 1, "maximum": 500, "default": 50 },
+        "sinceTimestamp": { "type": "integer" },
+        "clientTimestamp": { "type": "integer" }
+      }
+    },
+    "SyncGetChangesResponse": {
+      "type": "object",
+      "required": ["records", "nextCursor", "hasMore"],
+      "properties": {
+        "records": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/SyncRecord" }
+        },
+        "nextCursor": { "type": "string" },
+        "hasMore": { "type": "boolean" },
+        "serverTimestamp": { "type": "integer" }
+      }
+    },
+    "SyncPushChangesRequest": {
+      "type": "object",
+      "required": ["deviceId", "authToken", "records"],
+      "properties": {
+        "deviceId": { "type": "string" },
+        "authToken": { "type": "string" },
+        "records": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/SyncRecord" }
+        },
+        "clientTimestamp": { "type": "integer" }
+      }
+    },
+    "SyncPushChangesResponse": {
+      "type": "object",
+      "required": ["success", "appliedCount", "results"],
+      "properties": {
+        "success": { "type": "boolean" },
+        "appliedCount": { "type": "integer" },
+        "results": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/SyncRecordResult" }
+        },
+        "conflicts": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/SyncRecord" }
+        },
+        "serverTimestamp": { "type": "integer" },
+        "error": { "type": ["string", "null"] }
+      }
+    },
+    "SyncAckRequest": {
+      "type": "object",
+      "required": ["deviceId", "authToken", "acknowledgedUuids"],
+      "properties": {
+        "deviceId": { "type": "string" },
+        "authToken": { "type": "string" },
+        "acknowledgedUuids": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "clientTimestamp": { "type": "integer" }
+      }
+    },
+    "SyncAckResponse": {
+      "type": "object",
+      "required": ["success"],
+      "properties": {
+        "success": { "type": "boolean" },
+        "message": { "type": "string" }
+      }
+    },
+    "SyncUnpairRequest": {
+      "type": "object",
+      "required": ["deviceId", "authToken"],
+      "properties": {
+        "deviceId": { "type": "string" },
+        "authToken": { "type": "string" },
+        "reason": { "type": "string" },
+        "timestamp": { "type": "integer" }
+      }
+    },
+    "SyncUnpairResponse": {
+      "type": "object",
+      "required": ["success"],
+      "properties": {
+        "success": { "type": "boolean" },
+        "message": { "type": "string" }
+      }
+    }
+  }
+}

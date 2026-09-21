@@ -632,6 +632,14 @@ private fun PairedDeviceCard(
                             fontFamily = FontFamily.Monospace,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        if (device.certificateFingerprint.isNotBlank()) {
+                            Text(
+                                "🔒 TLS SHA-256: ${device.certificateFingerprint.take(17)}...",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontFamily = FontFamily.Monospace,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
 

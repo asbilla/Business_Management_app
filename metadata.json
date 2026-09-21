@@ -1,6 +1,6 @@
 {
-  "name": "Business_Management_app",
-  "description": "Offline-first My Business management & POS tool with local storage for business details, menu items, sales data, and appointments.",
+  "name": "My Business",
+  "description": "Offline-first My Business management & POS tool with secure, cursor-based local Wi-Fi synchronization for Windows desktop and Android.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

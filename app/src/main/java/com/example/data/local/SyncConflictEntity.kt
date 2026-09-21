@@ -1,11 +1,17 @@
 package com.example.data.local
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import kotlinx.serialization.Serializable
 
 @Serializable
-@Entity(tableName = "sync_conflicts")
+@Entity(
+    tableName = "sync_conflicts",
+    indices = [
+        Index(value = ["recordUuid"])
+    ]
+)
 data class SyncConflictEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
@@ -17,5 +23,6 @@ data class SyncConflictEntity(
     val remoteData: String, // JSON
     val resolved: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
-    val resolutionStrategy: String = "UNRESOLVED" // "UNRESOLVED", "LOCAL_WINS", "REMOTE_WINS", "MERGED"
+    val resolutionStrategy: String = "UNRESOLVED", // "UNRESOLVED", "LOCAL_WINS", "REMOTE_WINS", "MERGED"
+    val conflictStatus: String = "PENDING"
 )

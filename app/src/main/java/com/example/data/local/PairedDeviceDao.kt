@@ -22,8 +22,17 @@ interface PairedDeviceDao {
     @Query("SELECT * FROM paired_devices WHERE deviceId = :deviceId LIMIT 1")
     suspend fun getDeviceById(deviceId: String): PairedDeviceEntity?
 
+    @Query("UPDATE paired_devices SET lastSyncAt = :timestamp, lastSyncCursor = :cursor WHERE deviceId = :deviceId")
+    suspend fun updateLastSyncCursor(deviceId: String, cursor: String, timestamp: Long = System.currentTimeMillis())
+
     @Query("UPDATE paired_devices SET lastSyncAt = :timestamp WHERE deviceId = :deviceId")
     suspend fun updateLastSync(deviceId: String, timestamp: Long = System.currentTimeMillis())
+
+    @Query("UPDATE paired_devices SET lastSeen = :timestamp WHERE deviceId = :deviceId")
+    suspend fun updateLastSeen(deviceId: String, timestamp: Long = System.currentTimeMillis())
+
+    @Query("UPDATE paired_devices SET certificateFingerprint = :fingerprint WHERE deviceId = :deviceId")
+    suspend fun updateCertificateFingerprint(deviceId: String, fingerprint: String)
 
     @Query("UPDATE paired_devices SET status = :status WHERE deviceId = :deviceId")
     suspend fun updateStatus(deviceId: String, status: String)

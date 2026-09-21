@@ -1,11 +1,17 @@
 package com.example.data.local
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import kotlinx.serialization.Serializable
 
 @Serializable
-@Entity(tableName = "paired_devices")
+@Entity(
+    tableName = "paired_devices",
+    indices = [
+        Index(value = ["deviceId"], unique = true)
+    ]
+)
 data class PairedDeviceEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
@@ -13,8 +19,12 @@ data class PairedDeviceEntity(
     val deviceName: String,
     val ipAddress: String,
     val port: Int = 54320,
-    val pairingSecret: String, // Shared authenticated token
+    val pairingSecret: String = "", // Token reference or metadata (actual secret securely in Keystore)
+    val certificateFingerprint: String = "",
+    val lastSyncCursor: String = "",
+    val protocolVersion: Int = 1,
     val pairedAt: Long = System.currentTimeMillis(),
     val lastSyncAt: Long = 0L,
+    val lastSeen: Long = 0L,
     val status: String = "PAIRED" // "PAIRED", "REVOKED"
 )

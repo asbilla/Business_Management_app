@@ -1,12 +1,20 @@
 package com.example.data.local
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import kotlinx.serialization.Serializable
 import java.util.UUID
 
 @Serializable
-@Entity(tableName = "products")
+@Entity(
+    tableName = "products",
+    indices = [
+        Index(value = ["uuid"], unique = true),
+        Index(value = ["deletedAt"]),
+        Index(value = ["active"])
+    ]
+)
 data class ProductEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,

@@ -87,29 +87,14 @@ class TransactionRepository(
     val myDeviceName: String = DeviceIdManager.getDeviceName(context)
 
     init {
-        // Seed or migrate products from SharedPreferences into Room
+        // Seed or migrate products with deterministic UUIDs into Room
         repoScope.launch {
             try {
-                val count = productDao.getActiveCount()
-                if (count == 0) {
-                    val cached = preferences.getCachedProducts()
-                    val toInsert = cached.map { p ->
-                        ProductEntity(
-                            uuid = UUID.randomUUID().toString(),
-                            name = p.name,
-                            description = "",
-                            category = p.category,
-                            price = p.price,
-                            type = "Service",
-                            active = true,
-                            createdAt = System.currentTimeMillis(),
-                            updatedAt = System.currentTimeMillis(),
-                            version = 1L,
-                            deviceId = myDeviceId
-                        )
-                    }
-                    productDao.insertProducts(toInsert)
-                }
+                DeterministicProductMigration.migrateLegacyProductsIfNecessary(
+                    productDao = productDao,
+                    preferences = preferences,
+                    deviceId = myDeviceId
+                )
             } catch (e: Exception) {
                 android.util.Log.e("TransactionRepo", "Error migrating products to Room: ${e.message}")
             }
@@ -470,7 +455,7 @@ class TransactionRepository(
                 payload = json.encodeToString(ProductEntity.serializer(), updated)
             )
         } else {
-            val newUuid = UUID.randomUUID().toString()
+            val newUuid = DeterministicProductMigration.generateDeterministicProductUuid(product.name, product.category)
             val newEntity = ProductEntity(
                 uuid = newUuid,
                 name = product.name,
@@ -491,7 +476,8 @@ class TransactionRepository(
                 recordUuid = newUuid,
                 entityType = SyncProtocol.EntityTypes.PRODUCT,
                 operation = SyncProtocol.Operations.CREATE,
-                payload = json.encodeToString(ProductEntity.serializer(), newEntity.copy(id = newId))
+                payload = json.encodeToString(ProductEntity.serializer(), newEntity.copy(id = newId)),
+                version = 1L
             )
         }
 
@@ -504,6 +490,7 @@ class TransactionRepository(
         val now = System.currentTimeMillis()
 
         if (existing != null) {
+            val updatedVersion = existing.version + 1
             productDao.softDeleteByUuid(existing.uuid, now)
             preferences.deleteProduct(productName)
 
@@ -511,7 +498,8 @@ class TransactionRepository(
                 recordUuid = existing.uuid,
                 entityType = SyncProtocol.EntityTypes.PRODUCT,
                 operation = SyncProtocol.Operations.DELETE,
-                payload = json.encodeToString(ProductEntity.serializer(), existing.copy(deletedAt = now))
+                payload = json.encodeToString(ProductEntity.serializer(), existing.copy(deletedAt = now, version = updatedVersion)),
+                version = updatedVersion
             )
         } else {
             preferences.deleteProduct(productName)
@@ -535,7 +523,8 @@ class TransactionRepository(
         recordUuid: String,
         entityType: String,
         operation: String,
-        payload: String
+        payload: String,
+        version: Long = 1L
     ) {
         try {
             syncQueueDao.insert(
@@ -544,6 +533,7 @@ class TransactionRepository(
                     entityType = entityType,
                     operation = operation,
                     payload = payload,
+                    version = version,
                     createdAt = System.currentTimeMillis(),
                     status = SyncProtocol.Status.PENDING
                 )
@@ -562,7 +552,7 @@ class TransactionRepository(
     }
 
     suspend fun unpairDevice(deviceId: String) {
-        pairedDeviceDao.deleteDevice(deviceId)
+        wifiSyncEngine.unpairDevice(deviceId)
     }
 
     suspend fun triggerSyncNow(): SyncSessionResult {
@@ -578,7 +568,7 @@ class TransactionRepository(
     data class BackupData(
         val version: Int = 3,
         val timestamp: Long = System.currentTimeMillis(),
-        val appVersion: String = "v6.1",
+        val appVersion: String = "v6.2",
         val businessProfile: BusinessProfile,
         val appointmentSettings: AppointmentSettings,
         val themeMode: String = "System",
@@ -674,11 +664,12 @@ class TransactionRepository(
                         )
                     }
 
-                    // Re-insert products into Room
+                    // Re-insert products into Room with deterministic UUIDs
                     backup.products.forEach { p ->
+                        val pUuid = DeterministicProductMigration.generateDeterministicProductUuid(p.name, p.category)
                         productDao.insertProduct(
                             ProductEntity(
-                                uuid = UUID.randomUUID().toString(),
+                                uuid = pUuid,
                                 name = p.name,
                                 description = "",
                                 category = p.category,
