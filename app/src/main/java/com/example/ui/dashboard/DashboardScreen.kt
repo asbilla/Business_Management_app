@@ -30,7 +30,9 @@ import androidx.compose.material.icons.filled.MoneyOff
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -88,11 +90,14 @@ fun DashboardScreen(
     onNavigateToSettings: () -> Unit,
     onNavigateToMenuManagement: () -> Unit,
     onNavigateToSpecialOffers: () -> Unit,
+    onNavigateToWifiSync: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val transactions by repository.allTransactions.collectAsStateWithLifecycle(initialValue = emptyList())
     val unsyncedCount by repository.unsyncedCount.collectAsStateWithLifecycle(initialValue = 0)
+    val syncState by repository.syncState.collectAsStateWithLifecycle(initialValue = com.example.sync.engine.SyncState.IDLE)
+    val pendingSyncCount by repository.pendingSyncCount.collectAsStateWithLifecycle(initialValue = 0)
     val businessProfile by repository.businessProfile.collectAsStateWithLifecycle(initialValue = repository.getBusinessProfile())
     val allAppointments by repository.allAppointments.collectAsStateWithLifecycle(initialValue = emptyList())
 
@@ -146,6 +151,21 @@ fun DashboardScreen(
                     }
                 },
                 actions = {
+                    IconButton(
+                        onClick = onNavigateToWifiSync,
+                        modifier = Modifier.testTag("dashboard_wifi_sync_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Wifi,
+                            contentDescription = "Wi-Fi Sync",
+                            tint = when (syncState) {
+                                com.example.sync.engine.SyncState.SYNCED -> Color(0xFF16A34A)
+                                com.example.sync.engine.SyncState.SYNCING -> Color(0xFF0284C7)
+                                com.example.sync.engine.SyncState.ERROR, com.example.sync.engine.SyncState.CONFLICT -> Color(0xFFDC2626)
+                                else -> MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        )
+                    }
                     IconButton(
                         onClick = onNavigateToSettings,
                         modifier = Modifier.testTag("settings_button")

@@ -28,14 +28,11 @@ android {
     val formattedDate = SimpleDateFormat("yyyyMMdd.HHmm", Locale.US).format(now)
     
     versionCode = (timestamp / 10000).toInt() // Unique version code
-    versionName = "v5.9" 
+    versionName = "v6.1" 
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     
-    // Custom output naming
-    base {
-        archivesName.set("MyBusiness-v5.9")
-    }
+
   }
 
   signingConfigs {
@@ -86,6 +83,7 @@ secrets {
   propertiesFileName = ".env"
   defaultPropertiesFileName = ".env.example"
   ignoreList.add("FIREBASE_APPCHECK_DEBUG_TOKEN")
+  ignoreList.add("GEMINI_API_KEY")
 }
 
 googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN }

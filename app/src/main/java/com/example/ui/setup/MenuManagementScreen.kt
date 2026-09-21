@@ -76,7 +76,7 @@ fun MenuManagementScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val products by repository.products.collectAsState()
+    val products by repository.products.collectAsState(initial = emptyList())
     
     var searchQuery by remember { mutableStateOf("") }
     var showAddDialog by remember { mutableStateOf(false) }

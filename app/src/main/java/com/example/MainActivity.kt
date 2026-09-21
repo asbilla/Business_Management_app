@@ -30,6 +30,7 @@ import com.example.ui.entry.EntryScreen
 import com.example.ui.offers.SpecialOffersScreen
 import com.example.ui.setup.MenuManagementScreen
 import com.example.ui.setup.SetupScreen
+import com.example.ui.sync.WifiSyncScreen
 import com.example.ui.theme.MyApplicationTheme
 
 data class CallerBookingInfo(
@@ -105,6 +106,7 @@ sealed class Screen(val route: String) {
     data object MenuManagement : Screen("menu_management")
     data object SpecialOffers : Screen("special_offers")
     data object StatementSelection : Screen("statement_selection")
+    data object WifiSync : Screen("wifi_sync")
     data object Entry : Screen("entry/{entryType}") {
         fun createRoute(entryType: String): String = "entry/${Uri.encode(entryType)}"
     }
@@ -148,6 +150,9 @@ fun AppNavigation(
                 onNavigateToMenuManagement = {
                     navController.navigate(Screen.MenuManagement.route)
                 },
+                onNavigateToWifiSync = {
+                    navController.navigate(Screen.WifiSync.route)
+                },
                 onNavigateBack = if (navController.previousBackStackEntry != null) {
                     { navController.popBackStack() }
                 } else null
@@ -175,6 +180,9 @@ fun AppNavigation(
                 },
                 onNavigateToSpecialOffers = {
                     navController.navigate(Screen.SpecialOffers.route)
+                },
+                onNavigateToWifiSync = {
+                    navController.navigate(Screen.WifiSync.route)
                 }
             )
         }
@@ -253,6 +261,16 @@ fun AppNavigation(
         // Statement Selection Screen
         composable(Screen.StatementSelection.route) {
             com.example.ui.balancesheet.StatementSelectionScreen(
+                repository = repository,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // Wi-Fi Synchronization Screen
+        composable(Screen.WifiSync.route) {
+            WifiSyncScreen(
                 repository = repository,
                 onNavigateBack = {
                     navController.popBackStack()

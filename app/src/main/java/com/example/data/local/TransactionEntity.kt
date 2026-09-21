@@ -16,5 +16,9 @@ data class TransactionEntity(
     val type: String, // "Daily Income", "Expense", "Bill"
     val category: String, // Notes or Category
     val amount: Double,
-    val isSynced: Boolean = false
+    val isSynced: Boolean = false,
+    val updatedAt: Long = System.currentTimeMillis(),
+    val deletedAt: Long? = null,
+    val version: Long = 1L,
+    val deviceId: String = ""
 )

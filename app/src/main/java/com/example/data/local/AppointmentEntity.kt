@@ -21,5 +21,9 @@ data class AppointmentEntity(
     val notes: String = "",
     val price: Double = 0.0,
     val isSynced: Boolean = false,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),
+    val deletedAt: Long? = null,
+    val version: Long = 1L,
+    val deviceId: String = ""
 )
